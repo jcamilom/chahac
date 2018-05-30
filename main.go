@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/tls"
+	"encoding/csv"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -49,17 +50,31 @@ func eCheck(e error) {
 
 func main() {
 
-	content, err := ioutil.ReadFile("files/message.txt")
-	eCheck(err)
-
-	//fmt.Printf("File contents: %s", content)
-
 	mail := Mail{}
 	mail.senderId = "***@gmail.com"
-	mail.toIds = []string{"***@gmail.com", "***@msn.com", "***@gmail.com"}
 	mail.subject = "This is the email subject"
-	//mail.body = "Harry Potter and threat to Israel\n\nGood editing!!"
-	mail.body = string(content)
+
+	// First at all, import the recipients
+	recipientsContent, err := ioutil.ReadFile("files/recipients.csv")
+	eCheck(err)
+
+	r := csv.NewReader(strings.NewReader(string(recipientsContent)))
+
+	records, err := r.ReadAll()
+	eCheck(err)
+
+	records = records[1:] // Slices the first elements (file's header)
+	mail.toIds = make([]string, len(records))
+	for i, value := range records {
+		mail.toIds[i] = value[2]
+	}
+
+	msgContent, err := ioutil.ReadFile("files/message.txt")
+	eCheck(err)
+
+	//fmt.Printf("File contents: %s", msgContent)
+
+	mail.body = string(msgContent)
 
 	//fmt.Printf(mail.body)
 
@@ -121,6 +136,6 @@ func main() {
 
 	client.Quit()
 
-	log.Println("Mail sent successfully")
+	log.Println("Mails sent successfully")
 
 }
