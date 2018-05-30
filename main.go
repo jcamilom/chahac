@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/tls"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/smtp"
 	"strings"
@@ -20,10 +21,12 @@ type SmtpServer struct {
 	port string
 }
 
+// ServerName returns the server name.
 func (s *SmtpServer) ServerName() string {
 	return s.host + ":" + s.port
 }
 
+// BuildMessage joins the header and the body of the message.
 func (mail *Mail) BuildMessage() string {
 	message := ""
 	message += fmt.Sprintf("From: %s\r\n", mail.senderId)
@@ -37,12 +40,28 @@ func (mail *Mail) BuildMessage() string {
 	return message
 }
 
+// Most functions need to be checked for errors.
+func eCheck(e error) {
+	if e != nil {
+		log.Panic(e)
+	}
+}
+
 func main() {
+
+	content, err := ioutil.ReadFile("files/message.txt")
+	eCheck(err)
+
+	//fmt.Printf("File contents: %s", content)
+
 	mail := Mail{}
 	mail.senderId = "***@gmail.com"
 	mail.toIds = []string{"***@gmail.com", "***@msn.com", "***@gmail.com"}
 	mail.subject = "This is the email subject"
-	mail.body = "Harry Potter and threat to Israel\n\nGood editing!!"
+	//mail.body = "Harry Potter and threat to Israel\n\nGood editing!!"
+	mail.body = string(content)
+
+	//fmt.Printf(mail.body)
 
 	messageBody := mail.BuildMessage()
 
