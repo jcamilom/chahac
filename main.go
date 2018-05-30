@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/tls"
 	"encoding/csv"
 	"fmt"
@@ -8,11 +9,12 @@ import (
 	"log"
 	"net/smtp"
 	"strings"
+	"text/template"
 )
 
 type Mail struct {
 	senderId string
-	toIds    []string
+	toId     string
 	subject  string
 	body     string
 }
@@ -20,6 +22,13 @@ type Mail struct {
 type SmtpServer struct {
 	host string
 	port string
+}
+
+type Recipient struct {
+	Firstname string
+	Lastname  string
+	Email     string
+	Country   string
 }
 
 // ServerName returns the server name.
@@ -31,10 +40,7 @@ func (s *SmtpServer) ServerName() string {
 func (mail *Mail) BuildMessage() string {
 	message := ""
 	message += fmt.Sprintf("From: %s\r\n", mail.senderId)
-	if len(mail.toIds) > 0 {
-		message += fmt.Sprintf("To: %s\r\n", strings.Join(mail.toIds, ";"))
-	}
-
+	message += fmt.Sprintf("To: %s\r\n", mail.toId)
 	message += fmt.Sprintf("Subject: %s\r\n", mail.subject)
 	message += "\r\n" + mail.body
 
@@ -50,11 +56,10 @@ func eCheck(e error) {
 
 func main() {
 
-	mail := Mail{}
-	mail.senderId = "***@gmail.com"
-	mail.subject = "This is the email subject"
+	/* PART ONE -> RECIPIENTS */
 
-	// First at all, import the recipients
+	// Import the recipients
+	var recipients []Recipient
 	recipientsContent, err := ioutil.ReadFile("files/recipients.csv")
 	eCheck(err)
 
@@ -63,22 +68,35 @@ func main() {
 	records, err := r.ReadAll()
 	eCheck(err)
 
-	records = records[1:] // Slices the first elements (file's header)
-	mail.toIds = make([]string, len(records))
-	for i, value := range records {
-		mail.toIds[i] = value[2]
+	records = records[1:] // Slices the first element (file's header)
+	recipients = make([]Recipient, len(records))
+	for i, recipient := range records {
+		recipients[i].Firstname = recipient[0]
+		recipients[i].Lastname = recipient[1]
+		recipients[i].Email = recipient[2]
+		recipients[i].Country = recipient[3]
 	}
 
-	msgContent, err := ioutil.ReadFile("files/message.txt")
-	eCheck(err)
+	/* PART TWO -> MESSAGE TEMPLATE */
 
-	//fmt.Printf("File contents: %s", msgContent)
+	// Define a template.
+	const message = `
+Querido {{.Firstname}},
 
-	mail.body = string(msgContent)
+No te imaginas cuanto te extrañamos aquí en {{.Country}}.
 
-	//fmt.Printf(mail.body)
+Saludos,
+Tus papas
+`
 
-	messageBody := mail.BuildMessage()
+	// Create a new template and parse the message into it.
+	t := template.Must(template.New("message").Parse(message))
+
+	/* PART THREE -> SETUP THE SMTP CONNECTION */
+
+	// Common mail fields
+	mail := Mail{}
+	mail.senderId = "***@gmail.com"
 
 	smtpServer := SmtpServer{host: "smtp.gmail.com", port: "465"}
 
@@ -103,35 +121,67 @@ func main() {
 		log.Panic(err)
 	}
 
-	// step 1: Use Auth
+	// Use Auth
 	if err = client.Auth(auth); err != nil {
 		log.Panic(err)
 	}
 
-	// step 2: add all from and to
-	if err = client.Mail(mail.senderId); err != nil {
-		log.Panic(err)
-	}
-	for _, k := range mail.toIds {
-		if err = client.Rcpt(k); err != nil {
+	/* PART FOUR -> CREATE AND SEND THE MESSAGE FOR EACH RECIPIENTS */
+
+	var b bytes.Buffer // Take this aout of the loop
+	// Iterates over the recipients
+	for _, v := range recipients {
+
+		/* fmt.Printf("%+v\n", v) */
+		// Add "to"
+		mail.toId = v.Email
+
+		// 	Add "subject"
+		mail.subject = "Hola " + v.Firstname
+
+		// Execute the template
+		err := t.Execute(&b, v)
+		if err != nil {
+			log.Println("executing template:", err)
+		}
+
+		// Add "body"
+		mail.body = b.String()
+
+		// Build the message
+		messageBody := mail.BuildMessage()
+		fmt.Print(messageBody)
+		fmt.Print("\n=========================\n")
+
+		// Add "from" header
+		if err = client.Mail("***@gmail.com"); err != nil {
 			log.Panic(err)
 		}
-	}
 
-	// Data
-	w, err := client.Data()
-	if err != nil {
-		log.Panic(err)
-	}
+		// Add "to" header
+		if err = client.Rcpt(v.Email); err != nil {
+			log.Panic(err)
+		}
 
-	_, err = w.Write([]byte(messageBody))
-	if err != nil {
-		log.Panic(err)
-	}
+		// Data
+		w, err := client.Data()
+		if err != nil {
+			log.Panic(err)
+		}
 
-	err = w.Close()
-	if err != nil {
-		log.Panic(err)
+		_, err = w.Write([]byte(messageBody))
+		if err != nil {
+			log.Panic(err)
+		}
+
+		err = w.Close()
+		if err != nil {
+			log.Panic(err)
+		}
+
+		// Clear the buffer
+		b.Reset()
+
 	}
 
 	client.Quit()
