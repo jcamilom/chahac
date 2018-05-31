@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/smtp"
+	"os"
 	"strings"
 	"text/template"
 )
@@ -56,11 +57,19 @@ func eCheck(e error) {
 
 func main() {
 
+	/* ARGUMENTS CHECKING */
+
+	args := os.Args[1:]
+	argsLength := len(args)
+	if argsLength != 2 {
+		panic("Wrong usage. Chahac needs to be executed along two arguments. \n\nExample: ./chahac message.txt recipients.csv")
+	}
+
 	/* PART ONE -> RECIPIENTS */
 
-	// Import the recipients
+	// Import the recipiens file and create the recipients
 	var recipients []Recipient
-	recipientsContent, err := ioutil.ReadFile("files/recipients.csv")
+	recipientsContent, err := ioutil.ReadFile("files/" + args[1])
 	eCheck(err)
 
 	r := csv.NewReader(strings.NewReader(string(recipientsContent)))
@@ -79,18 +88,12 @@ func main() {
 
 	/* PART TWO -> MESSAGE TEMPLATE */
 
-	// Define a template.
-	const message = `
-Querido {{.Firstname}},
-
-No te imaginas cuanto te extrañamos aquí en {{.Country}}.
-
-Saludos,
-Tus papas
-`
+	// Import the template's content
+	msgContent, err := ioutil.ReadFile("files/" + args[0])
+	eCheck(err)
 
 	// Create a new template and parse the message into it.
-	t := template.Must(template.New("message").Parse(message))
+	t := template.Must(template.New("message").Parse(string(msgContent)))
 
 	/* PART THREE -> SETUP THE SMTP CONNECTION */
 
@@ -126,9 +129,11 @@ Tus papas
 		log.Panic(err)
 	}
 
-	/* PART FOUR -> CREATE AND SEND THE MESSAGE FOR EACH RECIPIENTS */
+	/* PART FOUR -> CREATE AND SEND THE MESSAGE FOR EACH RECIPIENT */
 
-	var b bytes.Buffer // Take this aout of the loop
+	// Buffer to store the executed template
+	var b bytes.Buffer
+
 	// Iterates over the recipients
 	for _, v := range recipients {
 

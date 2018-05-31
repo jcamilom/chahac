@@ -1,6 +1,6 @@
-Dear STUDENT,
+Querido {{.Firstname}},
 
-We would like to inform you that this is just a test.
+No te imaginas cuanto te extrañamos aquí en {{.Country}}.
 
-Cheers,
-Me
+Saludos,
+Tus papas
