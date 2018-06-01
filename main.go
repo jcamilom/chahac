@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/csv"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/smtp"
-	"os"
 	"strings"
 	"text/template"
 )
@@ -57,19 +57,17 @@ func eCheck(e error) {
 
 func main() {
 
-	/* ARGUMENTS CHECKING */
+	/* ARGUMENTS PARSING */
 
-	args := os.Args[1:]
-	argsLength := len(args)
-	if argsLength != 2 {
-		panic("Wrong usage. Chahac needs to be executed along two arguments. \n\nExample: ./chahac message.txt recipients.csv")
-	}
+	messageFilename := flag.String("msg", "message.txt", "Text template with the message in TXT format")
+	contactsFilename := flag.String("for", "recipients.csv", "CSV file with the recipient's information")
+	flag.Parse()
 
 	/* PART ONE -> RECIPIENTS */
 
 	// Import the recipiens file and create the recipients
 	var recipients []Recipient
-	recipientsContent, err := ioutil.ReadFile("files/" + args[1])
+	recipientsContent, err := ioutil.ReadFile("files/" + *contactsFilename)
 	eCheck(err)
 
 	r := csv.NewReader(strings.NewReader(string(recipientsContent)))
@@ -89,7 +87,7 @@ func main() {
 	/* PART TWO -> MESSAGE TEMPLATE */
 
 	// Import the template's content
-	msgContent, err := ioutil.ReadFile("files/" + args[0])
+	msgContent, err := ioutil.ReadFile("files/" + *messageFilename)
 	eCheck(err)
 
 	// Create a new template and parse the message into it.
