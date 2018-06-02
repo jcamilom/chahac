@@ -30,6 +30,9 @@ type Recipient struct {
 	Lastname  string
 	Email     string
 	Country   string
+	F1        string
+	F2        string
+	F3        string
 }
 
 // ServerName returns the server name.
@@ -61,6 +64,7 @@ func main() {
 
 	messageFilename := flag.String("msg", "message.txt", "Text template with the message in TXT format")
 	contactsFilename := flag.String("for", "recipients.csv", "CSV file with the recipient's information")
+	msgSubject := flag.String("sub", "Hello {{.Firstname}}", "Mail's subject template")
 	flag.Parse()
 
 	/* PART ONE -> RECIPIENTS */
@@ -82,16 +86,21 @@ func main() {
 		recipients[i].Lastname = recipient[1]
 		recipients[i].Email = recipient[2]
 		recipients[i].Country = recipient[3]
+		recipients[i].F1 = recipient[4]
+		recipients[i].F2 = recipient[5]
+		recipients[i].F3 = recipient[6]
 	}
 
-	/* PART TWO -> MESSAGE TEMPLATE */
+	/* PART TWO -> MESSAGE AND TITLE TEMPLATE */
 
 	// Import the template's content
 	msgContent, err := ioutil.ReadFile("files/" + *messageFilename)
 	eCheck(err)
 
 	// Create a new template and parse the message into it.
-	t := template.Must(template.New("message").Parse(string(msgContent)))
+	msgT := template.Must(template.New("message").Parse(string(msgContent)))
+	// The same for the email subjet
+	subjectT := template.Must(template.New("subject").Parse(*msgSubject))
 
 	/* PART THREE -> SETUP THE SMTP CONNECTION */
 
@@ -131,6 +140,7 @@ func main() {
 
 	// Buffer to store the executed template
 	var b bytes.Buffer
+	var b2 bytes.Buffer
 
 	// Iterates over the recipients
 	for _, v := range recipients {
@@ -139,16 +149,18 @@ func main() {
 		// Add "to"
 		mail.toId = v.Email
 
-		// 	Add "subject"
-		mail.subject = "Hola " + v.Firstname
-
-		// Execute the template
-		err := t.Execute(&b, v)
+		// 	Add "subject" from template
+		err := subjectT.Execute(&b2, v)
 		if err != nil {
 			log.Println("executing template:", err)
 		}
+		mail.subject = b2.String()
 
-		// Add "body"
+		// Add the message from template
+		err = msgT.Execute(&b, v)
+		if err != nil {
+			log.Println("executing template:", err)
+		}
 		mail.body = b.String()
 
 		// Build the message
@@ -184,6 +196,7 @@ func main() {
 
 		// Clear the buffer
 		b.Reset()
+		b2.Reset()
 
 	}
 
