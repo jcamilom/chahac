@@ -26,13 +26,19 @@ type SmtpServer struct {
 }
 
 type Recipient struct {
-	Firstname string
-	Lastname  string
-	Email     string
-	Country   string
-	F1        string
-	F2        string
-	F3        string
+	Firstname1 string
+	Firstname2 string
+	Firstname  string
+	Lastname1  string
+	Lastname2  string
+	Lastname   string
+	Email      string
+	Country    string
+	C1         string
+	C2         string
+	C3         string
+	C4         string
+	C5         string
 }
 
 // ServerName returns the server name.
@@ -82,13 +88,35 @@ func main() {
 	records = records[1:] // Slices the first element (file's header)
 	recipients = make([]Recipient, len(records))
 	for i, recipient := range records {
-		recipients[i].Firstname = recipient[0]
-		recipients[i].Lastname = recipient[1]
-		recipients[i].Email = recipient[2]
-		recipients[i].Country = recipient[3]
-		recipients[i].F1 = recipient[4]
-		recipients[i].F2 = recipient[5]
-		recipients[i].F3 = recipient[6]
+
+		// Join names
+		firstname := recipient[0]
+		if name2 := recipient[1]; name2 != "" {
+			firstname += " " + name2
+		}
+
+		// Join lastnames
+		lastname := recipient[2]
+		if lastname2 := recipient[3]; lastname2 != "" {
+			lastname += " " + lastname2
+		}
+
+		// Create the recipient
+		recipients[i] = Recipient{
+			Firstname1: recipient[0],
+			Firstname2: recipient[1],
+			Firstname:  firstname,
+			Lastname1:  recipient[2],
+			Lastname2:  recipient[3],
+			Lastname:   lastname,
+			Email:      recipient[4],
+			Country:    recipient[5],
+			C1:         recipient[6],
+			C2:         recipient[7],
+			C3:         recipient[8],
+			C4:         recipient[9],
+			C5:         recipient[10],
+		}
 	}
 
 	/* PART TWO -> MESSAGE AND TITLE TEMPLATE */

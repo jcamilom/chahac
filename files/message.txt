@@ -1,6 +1,6 @@
 Querido {{.Firstname}},
 
-No te imaginas cuanto te extrañamos aquí en {{.Country}}.
+No te imaginas cuanto te extrañamos aquí en {{.Country}}. ¡No vemos la hora de que sea {{.C1}} para vovler a verte!
 
 Saludos,
 Tus papas
