@@ -7,7 +7,6 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/smtp"
 	"strings"
 	"text/template"
@@ -57,10 +56,13 @@ func (mail *Mail) BuildMessage() string {
 	return message
 }
 
-// Most functions need to be checked for errors.
-func eCheck(e error) {
+// Check for errors and print a custom message
+func eCheck(msg string, e error) {
 	if e != nil {
-		log.Panic(e)
+		fmt.Print("************************************************************\n\n")
+		fmt.Print("Error: " + msg)
+		fmt.Print(".\n\n************************************************************\n")
+		panic(e)
 	}
 }
 
@@ -78,12 +80,12 @@ func main() {
 	// Import the recipiens file and create the recipients
 	var recipients []Recipient
 	recipientsContent, err := ioutil.ReadFile("files/" + *contactsFilename)
-	eCheck(err)
+	eCheck("there was an error opening the file "+*contactsFilename, err)
 
 	r := csv.NewReader(strings.NewReader(string(recipientsContent)))
 
 	records, err := r.ReadAll()
-	eCheck(err)
+	eCheck("there was an error reading the file "+*contactsFilename, err)
 
 	records = records[1:] // Slices the first element (file's header)
 	recipients = make([]Recipient, len(records))
@@ -123,9 +125,9 @@ func main() {
 
 	// Import the template's content
 	msgContent, err := ioutil.ReadFile("files/" + *messageFilename)
-	eCheck(err)
+	eCheck("there was an error with the file "+*messageFilename, err)
 
-	// Create a new template and parse the message into it.
+	// Create a new template and parse the message into it
 	msgT := template.Must(template.New("message").Parse(string(msgContent)))
 	// The same for the email subjet
 	subjectT := template.Must(template.New("subject").Parse(*msgSubject))
@@ -138,7 +140,7 @@ func main() {
 
 	smtpServer := SmtpServer{host: "smtp.gmail.com", port: "465"}
 
-	log.Println(smtpServer.host)
+	fmt.Println(smtpServer.host)
 	//build an auth
 	auth := smtp.PlainAuth("", mail.senderId, "password", smtpServer.host)
 
@@ -150,19 +152,14 @@ func main() {
 	}
 
 	conn, err := tls.Dial("tcp", smtpServer.ServerName(), tlsconfig)
-	if err != nil {
-		log.Panic(err)
-	}
+	eCheck("there was an error while dialing to the mail server", err)
 
 	client, err := smtp.NewClient(conn, smtpServer.host)
-	if err != nil {
-		log.Panic(err)
-	}
+	eCheck("there was an error whit the mail server", err)
 
 	// Use Auth
-	if err = client.Auth(auth); err != nil {
-		log.Panic(err)
-	}
+	err = client.Auth(auth)
+	eCheck("invalid username - password combination", err)
 
 	/* PART FOUR -> CREATE AND SEND THE MESSAGE FOR EACH RECIPIENT */
 
@@ -178,17 +175,13 @@ func main() {
 		mail.toId = v.Email
 
 		// 	Add "subject" from template
-		err := subjectT.Execute(&b2, v)
-		if err != nil {
-			log.Println("executing template:", err)
-		}
+		err = subjectT.Execute(&b2, v)
+		eCheck("invalid 'subject' template", err)
 		mail.subject = b2.String()
 
 		// Add the message from template
 		err = msgT.Execute(&b, v)
-		if err != nil {
-			log.Println("executing template:", err)
-		}
+		eCheck("invalid 'message' template", err)
 		mail.body = b.String()
 
 		// Build the message
@@ -197,30 +190,22 @@ func main() {
 		fmt.Print("\n=========================\n")
 
 		// Add "from" header
-		if err = client.Mail("***@gmail.com"); err != nil {
-			log.Panic(err)
-		}
+		err = client.Mail("***@gmail.com")
+		eCheck("there was an error adding the 'from' header", err)
 
 		// Add "to" header
-		if err = client.Rcpt(v.Email); err != nil {
-			log.Panic(err)
-		}
+		err = client.Rcpt(v.Email)
+		eCheck("there was an error adding the 'to' header", err)
 
 		// Data
 		w, err := client.Data()
-		if err != nil {
-			log.Panic(err)
-		}
+		eCheck("there was an error adding the message content", err)
 
 		_, err = w.Write([]byte(messageBody))
-		if err != nil {
-			log.Panic(err)
-		}
+		eCheck("there was an error writting the message", err)
 
 		err = w.Close()
-		if err != nil {
-			log.Panic(err)
-		}
+		eCheck("there was an error closing the message's writter", err)
 
 		// Clear the buffer
 		b.Reset()
@@ -230,6 +215,6 @@ func main() {
 
 	client.Quit()
 
-	log.Println("Mails sent successfully")
+	fmt.Println("Mails sent successfully")
 
 }
