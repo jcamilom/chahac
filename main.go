@@ -11,7 +11,10 @@ import (
 	"net/smtp"
 	"os"
 	"strings"
+	"syscall"
 	"text/template"
+
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 type Mail struct {
@@ -66,6 +69,22 @@ func eCheck(msg string, e error) {
 		fmt.Print(".\n\n************************************************************\n")
 		panic(e)
 	}
+}
+
+// Ask the user for user and password through console and returns them
+func getCredentials() (string, string) {
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print("username: ")
+	username, _ := reader.ReadString('\n')
+
+	fmt.Print("password: ")
+	bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
+	fmt.Println()
+	eCheck("there was an error while getting the password", err)
+	password := string(bytePassword)
+
+	// TrimSpace removes all leading and trailing white spaces, including '\n'
+	return strings.TrimSpace(username), password
 }
 
 func main() {
@@ -136,11 +155,8 @@ func main() {
 
 	/* PART THREE -> SETUP THE SMTP CONNECTION */
 
-	// Get the username fro user input
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Print("username: ")
-	username, _ := reader.ReadString('\n')
-	username = strings.TrimSuffix(username, "\n")
+	// Get username and password from user input
+	username, password := getCredentials()
 
 	// Common mail fields
 	mail := Mail{}
@@ -150,7 +166,7 @@ func main() {
 
 	fmt.Println(smtpServer.host)
 	//build an auth
-	auth := smtp.PlainAuth("", mail.senderId, "password", smtpServer.host)
+	auth := smtp.PlainAuth("", mail.senderId, password, smtpServer.host)
 
 	// Gmail will reject connection if it's not secure
 	// TLS config
