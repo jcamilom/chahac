@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"crypto/tls"
 	"encoding/csv"
@@ -8,6 +9,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/smtp"
+	"os"
 	"strings"
 	"text/template"
 )
@@ -134,9 +136,15 @@ func main() {
 
 	/* PART THREE -> SETUP THE SMTP CONNECTION */
 
+	// Get the username fro user input
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print("username: ")
+	username, _ := reader.ReadString('\n')
+	username = strings.TrimSuffix(username, "\n")
+
 	// Common mail fields
 	mail := Mail{}
-	mail.senderId = "***@gmail.com"
+	mail.senderId = username
 
 	smtpServer := SmtpServer{host: "smtp.gmail.com", port: "465"}
 
