@@ -142,7 +142,7 @@ func main() {
 		}
 	}
 
-	/* PART TWO -> MESSAGE AND TITLE TEMPLATE */
+	/* PART TWO -> MESSAGE AND SUBJECT TEMPLATE */
 
 	// Import the template's content
 	msgContent, err := ioutil.ReadFile("files/" + *messageFilename)
@@ -152,6 +152,59 @@ func main() {
 	msgT := template.Must(template.New("message").Parse(string(msgContent)))
 	// The same for the email subjet
 	subjectT := template.Must(template.New("subject").Parse(*msgSubject))
+
+	// Shows a message example when templates applied
+	if len(recipients) > 0 {
+		fmt.Print("************************************************************\n")
+		fmt.Print("Preview of the generated message")
+		fmt.Print("\n************************************************************\n")
+
+		// Buffer to store the executed templates
+		var b1, b2 bytes.Buffer
+
+		// 	Add "subject" from template
+		err = subjectT.Execute(&b1, recipients[0])
+		eCheck("invalid 'subject' template", err)
+
+		// Add the message from template
+		err = msgT.Execute(&b2, recipients[0])
+		eCheck("invalid 'message' template", err)
+
+		message := ""
+		message += fmt.Sprintf("From: ...\r\n")
+		message += fmt.Sprintf("To: %s\r\n", recipients[0].Email)
+		message += fmt.Sprintf("Subject: %s\r\n", b1.String())
+		message += "\r\n" + b2.String()
+
+		fmt.Print(message)
+		fmt.Print("\n************************************************************\n")
+		fmt.Print("Press 'return' to continue or 'c' and then 'return' to cancel")
+		fmt.Print("\n************************************************************\n")
+
+		reader := bufio.NewReader(os.Stdin)
+		char, _, err := reader.ReadRune()
+		eCheck("there was a problem reading your choice", err)
+
+		switch char {
+		case '\n':
+			fmt.Print("ok...\n\n")
+			break
+		case 'c':
+			fmt.Println("leaving...")
+			os.Exit(1)
+			break
+		default:
+			fmt.Println("Invalid option, leaving...")
+			os.Exit(1)
+			break
+		}
+
+	} else {
+		fmt.Print("************************************************************\n\n")
+		fmt.Print("Error: there are no entries in " + *contactsFilename)
+		fmt.Print(".\n\n************************************************************\n")
+		os.Exit(1)
+	}
 
 	/* PART THREE -> SETUP THE SMTP CONNECTION */
 
@@ -179,7 +232,7 @@ func main() {
 	eCheck("there was an error while dialing to the mail server", err)
 
 	client, err := smtp.NewClient(conn, smtpServer.host)
-	eCheck("there was an error whit the mail server", err)
+	eCheck("there was an error whith the mail server", err)
 
 	// Use Auth
 	err = client.Auth(auth)
@@ -189,7 +242,6 @@ func main() {
 
 	// Buffer to store the executed template
 	var b bytes.Buffer
-	var b2 bytes.Buffer
 
 	// Iterates over the recipients
 	for _, v := range recipients {
@@ -199,11 +251,13 @@ func main() {
 		mail.toId = v.Email
 
 		// 	Add "subject" from template
-		err = subjectT.Execute(&b2, v)
+		b.Reset() // Clears the buffer
+		err = subjectT.Execute(&b, v)
 		eCheck("invalid 'subject' template", err)
-		mail.subject = b2.String()
+		mail.subject = b.String()
 
 		// Add the message from template
+		b.Reset() // Clears the buffer
 		err = msgT.Execute(&b, v)
 		eCheck("invalid 'message' template", err)
 		mail.body = b.String()
@@ -230,10 +284,6 @@ func main() {
 
 		err = w.Close()
 		eCheck("there was an error closing the message's writter", err)
-
-		// Clear the buffer
-		b.Reset()
-		b2.Reset()
 
 	}
 
