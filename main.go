@@ -94,6 +94,8 @@ func main() {
 	messageFilename := flag.String("msg", "message.txt", "Text template with the message in TXT format")
 	contactsFilename := flag.String("for", "recipients.csv", "CSV file with the recipient's information")
 	msgSubject := flag.String("sub", "Hello {{.Firstname}}", "Mail's subject template")
+	serverHost := flag.String("host", "smtp.gmail.com", "Mail server host")
+	serverPort := flag.String("port", "465", "Mail server port")
 	flag.Parse()
 
 	/* PART ONE -> RECIPIENTS */
@@ -215,7 +217,7 @@ func main() {
 	mail := Mail{}
 	mail.senderId = username
 
-	smtpServer := SmtpServer{host: "smtp.gmail.com", port: "465"}
+	smtpServer := SmtpServer{host: *serverHost, port: *serverPort}
 
 	fmt.Println(smtpServer.host)
 	//build an auth
@@ -242,15 +244,19 @@ func main() {
 
 	// Buffer to store the executed template
 	var b bytes.Buffer
+	l := len(recipients)
+
+	fmt.Print("\nSending mails...")
 
 	// Iterates over the recipients
-	for _, v := range recipients {
+	for i, v := range recipients {
 
-		/* fmt.Printf("%+v\n", v) */
+		fmt.Printf("\n(%v/%v) %v... ", i+1, l, v.Email)
+
 		// Add "to"
 		mail.toId = v.Email
 
-		// 	Add "subject" from template
+		// Add "subject" from template
 		b.Reset() // Clears the buffer
 		err = subjectT.Execute(&b, v)
 		eCheck("invalid 'subject' template", err)
@@ -264,8 +270,8 @@ func main() {
 
 		// Build the message
 		messageBody := mail.BuildMessage()
-		fmt.Print(messageBody)
-		fmt.Print("\n=========================\n")
+		/* fmt.Print(messageBody)
+		fmt.Print("\n=========================\n") */
 
 		// Add "from" header
 		err = client.Mail("***@gmail.com")
@@ -285,10 +291,12 @@ func main() {
 		err = w.Close()
 		eCheck("there was an error closing the message's writter", err)
 
+		fmt.Print("[ok]")
+
 	}
 
 	client.Quit()
 
-	fmt.Println("Mails sent successfully")
+	fmt.Print("\n\nMails sent successfully.\n\n")
 
 }
