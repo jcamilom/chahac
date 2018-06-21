@@ -95,23 +95,48 @@ func main() {
 	messageFilename := flag.String("msg", "message.txt", "Text template with the message in TXT format")
 	contactsFilename := flag.String("for", "recipients.csv", "CSV file with the recipient's information")
 	msgSubject := flag.String("sub", "Hello {{.Firstname}}", "Mail's subject template")
+	commaSep := flag.String("sep", ",", "CSV comma separator")
 	serverHost := flag.String("host", "smtp.gmail.com", "Mail server host")
 	serverPort := flag.String("port", "465", "Mail server port")
 	flag.Parse()
 
 	/* PART ONE -> RECIPIENTS */
 
-	// Import the recipiens file and create the recipients
+	// Import the recipients file and create the recipients
 	var recipients []Recipient
 	recipientsContent, err := ioutil.ReadFile("files/" + *contactsFilename)
 	eCheck("there was an error opening the file "+*contactsFilename, err)
 
 	r := csv.NewReader(strings.NewReader(string(recipientsContent)))
+	// Set the delimiter
+	if char := (*commaSep)[0]; char == '\x2c' {
+		r.Comma = ','
+	} else if char == '\x3b' {
+		r.Comma = ';'
+	} else {
+		fmt.Println("Error: invalid comma separator.")
+		os.Exit(1)
+	}
 
 	records, err := r.ReadAll()
 	eCheck("there was an error reading the file "+*contactsFilename, err)
 
-	records = records[1:] // Slices the first element (file's header)
+	// Check if the csv file has entries (other than the header)
+	if len(records) < 2 {
+		fmt.Println("Error: the recipients file has no entries.")
+		os.Exit(1)
+	} else {
+		records = records[1:] // Slices the first element (file's header)
+	}
+
+	// Check if the csv file has the right number of columns
+	if len(records[0]) != 12 {
+		fmt.Println("Error: CSV invalid format. The for the following reasons:")
+		fmt.Println("1. The file hasn't 12 columns.")
+		fmt.Println("2. The file's comma separator doesn't correspond to the one expected by the program, which is '" + *commaSep + "'")
+		os.Exit(1)
+	}
+
 	recipients = make([]Recipient, len(records))
 	for i, recipient := range records {
 
