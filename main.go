@@ -182,7 +182,7 @@ func main() {
 
 		fmt.Print(message)
 		fmt.Print("\n************************************************************\n")
-		fmt.Print("Press 'return' to continue or 'c' and then 'return' to cancel")
+		fmt.Print("Do you want to continue? (yes/no)")
 		fmt.Print("\n************************************************************\n")
 
 		reader := bufio.NewReader(os.Stdin)
@@ -190,10 +190,9 @@ func main() {
 		eCheck("there was a problem reading your choice", err)
 
 		switch char {
-		case '\n':
-			fmt.Print("ok...\n\n")
+		case 'y':
 			break
-		case 'c':
+		case 'n':
 			fmt.Println("leaving...")
 			os.Exit(1)
 			break
@@ -221,7 +220,6 @@ func main() {
 
 	smtpServer := SmtpServer{host: *serverHost, port: *serverPort}
 
-	fmt.Println(smtpServer.host)
 	//build an auth
 	auth := smtp.PlainAuth("", mail.senderId, password, smtpServer.host)
 
