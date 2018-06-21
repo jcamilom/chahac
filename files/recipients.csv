@@ -1,4 +1,4 @@
-firstname1,firstname2,lastname1,lastname2,email,country,c1,c2,c3,c4,c5
-Juan,Pedro,Arango,Lopez,***@msn.com,Colombia,agosto,,,,
-Jhon,,Smith,,***@gmail.com,Canada,,,,,
-Tony,,Müller,,***@gmail.com,Germany,,,,,
+firstname1,firstname2,lastname1,lastname2,nickname,email,country,c1,c2,c3,c4,c5
+Juan,Pedro,Arango,Lopez,Pedrito,***@msn.com,Colombia,agosto,,,,
+Jhon,,Smith,,The Bro,***@gmail.com,Canada,,,,,
+Tony,,Müller,,Ton,***@gmail.com,Germany,,,,,

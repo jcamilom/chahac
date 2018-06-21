@@ -36,6 +36,7 @@ type Recipient struct {
 	Lastname1  string
 	Lastname2  string
 	Lastname   string
+	Nickname   string
 	Email      string
 	Country    string
 	C1         string
@@ -134,13 +135,14 @@ func main() {
 			Lastname1:  recipient[2],
 			Lastname2:  recipient[3],
 			Lastname:   lastname,
-			Email:      recipient[4],
-			Country:    recipient[5],
-			C1:         recipient[6],
-			C2:         recipient[7],
-			C3:         recipient[8],
-			C4:         recipient[9],
-			C5:         recipient[10],
+			Nickname:   recipient[4],
+			Email:      recipient[5],
+			Country:    recipient[6],
+			C1:         recipient[7],
+			C2:         recipient[8],
+			C3:         recipient[9],
+			C4:         recipient[10],
+			C5:         recipient[11],
 		}
 	}
 

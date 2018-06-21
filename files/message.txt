@@ -1,4 +1,4 @@
-Querido {{.Firstname}},
+Querido {{.Nickname}},
 
 No te imaginas cuanto te extrañamos aquí en {{.Country}}. ¡No vemos la hora de que sea {{.C1}} para volver a verte!
 
