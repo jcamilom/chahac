@@ -75,10 +75,10 @@ func eCheck(msg string, e error) {
 // Ask the user for user and password through console and returns them
 func getCredentials() (string, string) {
 	reader := bufio.NewReader(os.Stdin)
-	fmt.Print("username: ")
+	fmt.Print("\nUsername: ")
 	username, _ := reader.ReadString('\n')
 
-	fmt.Print("password: ")
+	fmt.Print("Password: ")
 	bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
 	fmt.Println()
 	eCheck("there was an error while getting the password", err)
@@ -182,22 +182,23 @@ func main() {
 
 		fmt.Print(message)
 		fmt.Print("\n************************************************************\n")
-		fmt.Print("Do you want to continue? (yes/no)")
-		fmt.Print("\n************************************************************\n")
+		fmt.Print("Do you want to continue? (yes/no): ")
 
 		reader := bufio.NewReader(os.Stdin)
 		char, _, err := reader.ReadRune()
 		eCheck("there was a problem reading your choice", err)
 
+		fmt.Print("************************************************************\n")
+
 		switch char {
 		case 'y':
 			break
 		case 'n':
-			fmt.Println("leaving...")
+			fmt.Print("leaving...\n\n")
 			os.Exit(1)
 			break
 		default:
-			fmt.Println("Invalid option, leaving...")
+			fmt.Print("Invalid option, leaving...\n\n")
 			os.Exit(1)
 			break
 		}
